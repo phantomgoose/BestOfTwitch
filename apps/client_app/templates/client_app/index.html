@@ -9,9 +9,9 @@
     <body>
         <form class="js-create-clip-form" method="post" action="http://clips.twitch.tv/clips" target="">
             {% csrf_token %}
-            <input class="js-create-clip-channel" type="text" name="channel" value="nl_kripp">
-            <input class="js-create-clip-offset" type="number" min="0" max="100000" name="offset" value="100000">
-            <input class="js-create-clip-broadcast_id" type="number" name="broadcast_id" min="0" max="99999999" value="">
+            <input class="js-create-clip-channel" type="text" name="channel" value="{{ stream }}">
+            <input class="js-create-clip-offset" type="number" name="offset" value="{{ offset }}">
+            <input class="js-create-clip-broadcast_id" type="number" name="broadcast_id" value="{{ stream_id }}">
             <input type="submit" value="Create clip">
         </form>
 
