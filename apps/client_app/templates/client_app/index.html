@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title></title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="css/style.css" rel="stylesheet">
+    </head>
+    <body>
+        <form class="js-create-clip-form" method="post" action="http://clips.twitch.tv/clips" target="">
+            {% csrf_token %}
+            <input class="js-create-clip-channel" type="text" name="channel" value="nl_kripp">
+            <input class="js-create-clip-offset" type="number" min="0" max="100000" name="offset" value="100000">
+            <input class="js-create-clip-broadcast_id" type="number" name="broadcast_id" min="0" max="99999999" value="">
+            <input type="submit" value="Create clip">
+        </form>
+
+        <form action="client-index" method="post">
+            {% csrf_token %}
+            <input type="submit" value="Click me">
+        </form>
+
+    </body>
+</html>

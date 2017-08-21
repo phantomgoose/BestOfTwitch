@@ -1,2 +1,7 @@
 secret_settings.py
+twitch_auth.py
 *.pyc
+.vscode/
+geckodriver.log
+raw_json
+raw_html
