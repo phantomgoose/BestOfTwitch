@@ -17,7 +17,9 @@
 
         <form action="client-index" method="post">
             {% csrf_token %}
-            <input type="submit" value="Click me">
+            <p>Enter stream to watch for activity:</p>
+            <input type="text" name="stream_name">
+            <input type="submit" value="Start watching">
         </form>
 
     </body>

@@ -45,14 +45,14 @@ def getStreamOffset(stream):
     return offset
 
 #clips a stream at current time using my API token
-def clipStream(channel_name):
+def clipStream(channel_name, chat_offset=0):
     stream = getStream(channel_name)
     stream_id = getStreamID(stream)
-    offset = getStreamOffset(stream)
+    offset = getStreamUptime(stream)
 
     post_data = {
         'channel': channel_name,
-        'offset': offset,
+        'offset': offset - chat_offset,
         'broadcast_id': stream_id,
     }
 
