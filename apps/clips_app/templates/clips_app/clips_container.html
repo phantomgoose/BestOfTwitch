@@ -1,0 +1,14 @@
+<table class="clip-container">
+    {% if clips %}
+    <tr>
+        <th>Link</th>
+        <th>Messages</th>
+    </tr>
+    {% for clip in clips %}
+    <tr>
+        <td><a href="{{clip.url}}">Link</a></td>
+        <td>{{clip.messages}}</td>
+    </tr>
+    {% endfor %}
+    {% endif %}
+</table>

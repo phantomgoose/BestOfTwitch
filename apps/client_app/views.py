@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 from django.views import View
 from ..chat_app.connection import chatStats
-from ..clips_app.formgen import getStreamUptime, getStreamID, getStream, clipStream
+from ..clips_app.clipgen import getStreamUptime, getStreamID, getStream, clipStream
 from django.shortcuts import render, HttpResponse, reverse, redirect
 
 class ClientIndex(View):

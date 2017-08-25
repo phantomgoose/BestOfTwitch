@@ -1,7 +1,7 @@
 from twitch_auth import AUTH_TOKEN, USERNAME
 import socket
 import time
-from ..clips_app.formgen import clipStream
+from ..clips_app.clipgen import clipStream
 from threading import Thread
 import re
 
@@ -59,9 +59,11 @@ class MessageList(LinkedList):
     #prints out all of the messages in the list
     def dump(self):
         currentNode = self.head
+        result = []
         while currentNode is not None:
-            print currentNode.val['message']
+            result.append(currentNode.val['message'])
             currentNode = currentNode.next
+        return result
 
 #decorator that creates a separate thread for the wrapped function to avoid blocking main django thread
 def schedule(func):
@@ -89,12 +91,12 @@ def readChat(socket):
 
 #returns just the user's name and message by removing all the extra fat
 def parseMessage(channel_name, twitch_message):
-    NAME_REGEX = re.compile(r':(?P<name>.+)!')
+    # NAME_REGEX = re.compile(r':(?P<name>.+)!')
     MESSAGE_REGEX = re.compile(channel_name + r' :(?P<message>.*)')
     try:
-        name = NAME_REGEX.search(twitch_message).groupdict()['name']
+        # name = NAME_REGEX.search(twitch_message).groupdict()['name']
         message = MESSAGE_REGEX.search(twitch_message).groupdict()['message']
-        return name + ': ' + message
+        return message
     except:
         print 'something went horribly wrong'
         return twitch_message
@@ -102,7 +104,7 @@ def parseMessage(channel_name, twitch_message):
 #Starts in a new thread. Keeps track of messages created, both total and running total, clips the stream once the thread determines that an interesting spike in activity has occured (as determined by the parameters)
 #everything is floats to make sure the averages aren't too messed up
 @schedule
-def chatStats(channel_name, running_timeframe=10.0, max_timeframe=120, delay_on_connect=60.0, delay_on_clip=30.0, activity_threshold=3):
+def chatStats(channel_name, running_timeframe=10.0, max_timeframe=120, delay_on_connect=30.0, delay_on_clip=30.0, activity_threshold=2):
     #initial setup
     stream = connect(channel_name)
     #gets time at the start of the thread
@@ -119,8 +121,8 @@ def chatStats(channel_name, running_timeframe=10.0, max_timeframe=120, delay_on_
         if pingPong(stream, msg):
             continue
         #prettifies the message
-        print parseMessage(channel_name, msg)
-        print(msg)
+        msg = parseMessage(channel_name, msg)
+        print msg
         #updates total elapsed time
         current_time = time.time()
         total_time_elapsed = current_time - start_time
@@ -138,7 +140,7 @@ def chatStats(channel_name, running_timeframe=10.0, max_timeframe=120, delay_on_
         #if the number of messages created per second in the last X seconds exceeds the average amount since we started watching the stream by a certain amount, AND we've been watching the stream long enough, AND it's been long enough since we last created a clip of this stream, THEN clip the stream
         if (short_per_sec > long_per_sec * activity_threshold) and (total_time_elapsed > delay_on_connect) and (current_time - clipped_at >= delay_on_clip):
             #clips at 5 seconds before detection to account for chat's delay between significant event and reaction/avg messages sent catchup
-            clipStream(channel_name, 5)
+            clipStream(channel_name, 5, short_list.dump())
             #stores current time as clipped_at, so that we don't create another clip immediately afterwards
             clipped_at = current_time
             print '*'*50

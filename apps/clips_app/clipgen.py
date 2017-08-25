@@ -5,6 +5,7 @@ from dateutil import parser
 from django.utils import timezone
 import requests
 import re
+from .models import Clip
 
 SLUG_REGEX = re.compile(r'slug: "(?P<slug>[a-zA-Z]*)"')
 
@@ -32,7 +33,7 @@ def getStreamUptime(stream):
     return diffSeconds
 
 #clips a stream at current time using my API token and returns the clip's slug
-def clipStream(channel_name, chat_offset=0):
+def clipStream(channel_name, chat_offset=0, message_dump=""):
     stream = getStream(channel_name)
     stream_id = getStreamID(stream)
     offset = getStreamUptime(stream)
@@ -49,4 +50,9 @@ def clipStream(channel_name, chat_offset=0):
     }
 
     r = requests.post('http://clips.twitch.tv/clips', data=post_data, cookies=cookie_data)
-    return SLUG_REGEX.search(r.content).groupdict()['slug']
+    messages = ' '.join(message_dump)
+    try:
+        Clip.objects.create(url='https://clips.twitch.tv/' + SLUG_REGEX.search(r.content).groupdict()['slug'], messages=messages)
+    except AttributeError:
+        print 'Fatal: could not create clip. API error?'
+        print AttributeError, AttributeError.args, AttributeError.message
