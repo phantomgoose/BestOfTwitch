@@ -7,20 +7,11 @@
         <link href="css/style.css" rel="stylesheet">
     </head>
     <body>
-        <form class="js-create-clip-form" method="post" action="http://clips.twitch.tv/clips" target="">
-            {% csrf_token %}
-            <input class="js-create-clip-channel" type="text" name="channel" value="{{ stream }}">
-            <input class="js-create-clip-offset" type="number" name="offset" value="{{ offset }}">
-            <input class="js-create-clip-broadcast_id" type="number" name="broadcast_id" value="{{ stream_id }}">
-            <input type="submit" value="Create clip">
-        </form>
-
         <form action="client-index" method="post">
             {% csrf_token %}
             <p>Enter stream to watch for activity:</p>
             <input type="text" name="stream_name">
             <input type="submit" value="Start watching">
         </form>
-
     </body>
 </html>

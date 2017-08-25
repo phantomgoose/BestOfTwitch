@@ -2,9 +2,11 @@ import urllib2
 from ..chat_app.twitch_auth import CLIENT_ID, API_TOKEN, PERSISTENT
 import json
 from dateutil import parser
-from datetime import timedelta
 from django.utils import timezone
 import requests
+import re
+
+SLUG_REGEX = re.compile(r'slug: "(?P<slug>[a-zA-Z]*)"')
 
 #gets the stream object by name
 def getStream(channel_name):
@@ -29,22 +31,7 @@ def getStreamUptime(stream):
     diffSeconds = diff.seconds
     return diffSeconds
 
-#returns stream object's fps as an integer
-def getStreamFPS(stream):
-    average_fps = stream['stream']['average_fps']
-    if average_fps > 25.0 and average_fps < 35.0:
-        return 30
-    elif average_fps > 55.0 and average_fps < 65.0:
-        return 60
-    else:
-        return -1
-
-#returns stream object's current frame offset as an integer. Unsure if needed, offset seems to be specified in seconds actually
-def getStreamOffset(stream):
-    offset = getStreamUptime(stream) * getStreamFPS(stream)
-    return offset
-
-#clips a stream at current time using my API token
+#clips a stream at current time using my API token and returns the clip's slug
 def clipStream(channel_name, chat_offset=0):
     stream = getStream(channel_name)
     stream_id = getStreamID(stream)
@@ -62,3 +49,4 @@ def clipStream(channel_name, chat_offset=0):
     }
 
     r = requests.post('http://clips.twitch.tv/clips', data=post_data, cookies=cookie_data)
+    return SLUG_REGEX.search(r.content).groupdict()['slug']
