@@ -52,7 +52,7 @@ def clipStream(channel_name, chat_offset=0, message_dump=""):
     r = requests.post('http://clips.twitch.tv/clips', data=post_data, cookies=cookie_data)
     messages = ' '.join(message_dump)
     try:
-        Clip.objects.create(url='https://clips.twitch.tv/' + SLUG_REGEX.search(r.content).groupdict()['slug'], messages=messages)
+        Clip.objects.create(url='https://clips.twitch.tv/' + SLUG_REGEX.search(r.content).groupdict()['slug'], messages=messages, channel=channel_name)
     except AttributeError:
         print 'Fatal: could not create clip. API error?'
         print AttributeError, AttributeError.args, AttributeError.message

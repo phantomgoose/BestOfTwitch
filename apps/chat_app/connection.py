@@ -4,6 +4,7 @@ import time
 from ..clips_app.clipgen import clipStream
 from threading import Thread
 import re
+from datetime import datetime
 
 TCP_IP = socket.gethostbyname('irc.chat.twitch.tv')
 TCP_PORT = 6667
@@ -47,8 +48,16 @@ class LinkedList(object):
 
 #this is where we'll store our message/timestamp values for the moving time window
 class MessageList(LinkedList):
+
+    #adding an empty messages property to help detect disconnects
+    def __init__(self):
+        self.empty_messages = 0
+        super(MessageList, self).__init__()    
+
     #adds a new message/timestamp to the list
     def add(self, message, timestamp):
+        if len(message) < 1:
+            self.empty_messages += 1
         super(MessageList, self).add({ 'message': message, 'timestamp': timestamp })
     
     #removes old messages from the head if the current head was created more than [timeframe] seconds ago
@@ -65,6 +74,15 @@ class MessageList(LinkedList):
             currentNode = currentNode.next
         return result
 
+    #checks if the last few messages are empty
+    def detectDisconnect(self):
+        if self.length > 10 and self.empty_messages > 10:
+            self.empty_messages = 0
+            log('MessageList detected disconnect')
+            return True
+        return False
+
+
 #decorator that creates a separate thread for the wrapped function to avoid blocking main django thread
 def schedule(func):
     def wrapper(*args, **kwargs):
@@ -75,6 +93,7 @@ def schedule(func):
 
 #establishes connection to twitch IRC server, returns connected socket
 def connect(channel_name):
+    log('connecting to ' + channel_name)
     s = socket.socket()
     s.connect(( TCP_IP, TCP_PORT ))
     oauth = 'oauth:' + AUTH_TOKEN[6:]
@@ -83,6 +102,7 @@ def connect(channel_name):
     s.send('USER ' + USERNAME + '\r\n')
     s.send('JOIN #' + channel_name + '\r\n')
     connect_spew = s.recv(BUFFER_SIZE) #clears the buffer
+    log('connected to ' + channel_name)
     return s
 
 #returns the latest message from the socket
@@ -91,14 +111,12 @@ def readChat(socket):
 
 #returns just the user's name and message by removing all the extra fat
 def parseMessage(channel_name, twitch_message):
-    # NAME_REGEX = re.compile(r':(?P<name>.+)!')
     MESSAGE_REGEX = re.compile(channel_name + r' :(?P<message>.*)')
     try:
-        # name = NAME_REGEX.search(twitch_message).groupdict()['name']
         message = MESSAGE_REGEX.search(twitch_message).groupdict()['message']
         return message
     except:
-        print 'something went horribly wrong'
+        log('unable to parse raw chat message')
         return twitch_message
 
 #Starts in a new thread. Keeps track of messages created, both total and running total, clips the stream once the thread determines that an interesting spike in activity has occured (as determined by the parameters)
@@ -120,6 +138,9 @@ def chatStats(channel_name, running_timeframe=10.0, max_timeframe=120, delay_on_
         #keeps connection alive by replying to pings. If a ping is received, the rest of the loop is skipped.
         if pingPong(stream, msg):
             continue
+        #attempts to reconnect to the chat server if a disconnect has been detected
+        if short_list.detectDisconnect():
+            stream = connect(channel_name)
         #prettifies the message
         msg = parseMessage(channel_name, msg)
         print msg
@@ -143,13 +164,17 @@ def chatStats(channel_name, running_timeframe=10.0, max_timeframe=120, delay_on_
             clipStream(channel_name, 5, short_list.dump())
             #stores current time as clipped_at, so that we don't create another clip immediately afterwards
             clipped_at = current_time
-            print '*'*50
-            print 'clipping {}'.format(channel_name)
-            print '*'*50
+            log('clipping ' + channel_name)
 
 #keeps connection alive by replying to IRC server's pings, returns true if the msg contained the ping, false otherwise
 def pingPong(stream, msg):
     if 'PING :tmi.twitch.tv' in msg:
-        stream.send('PONG :tmi.twitch.tv')
+        stream.send('PONG :tmi.twitch.tv\r\n')
+        #logging for pings
+        log('replied to ping')
         return True
     return False
+
+#logs errors and such to a file
+def log(message):
+    open('error_log.txt', 'w').write(str(datetime.now()) + ': ' + message)
