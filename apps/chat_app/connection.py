@@ -104,7 +104,7 @@ def parseMessage(channel_name, twitch_message):
 #Starts in a new thread. Keeps track of messages created, both total and running total, clips the stream once the thread determines that an interesting spike in activity has occured (as determined by the parameters)
 #everything is floats to make sure the averages aren't too messed up
 @schedule
-def chatStats(channel_name, running_timeframe=10.0, max_timeframe=120, delay_on_connect=30.0, delay_on_clip=30.0, activity_threshold=2):
+def chatStats(channel_name, running_timeframe=10.0, max_timeframe=120, delay_on_connect=60.0, delay_on_clip=30.0, activity_threshold=3):
     #initial setup
     stream = connect(channel_name)
     #gets time at the start of the thread
