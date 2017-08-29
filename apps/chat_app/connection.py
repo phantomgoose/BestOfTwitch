@@ -2,7 +2,7 @@ from twitch_auth import AUTH_TOKEN, USERNAME
 import socket
 import time
 from ..clips_app.clipgen import clipStream
-from threading import Thread
+from ..functions import schedule, log
 import re
 from datetime import datetime
 
@@ -81,15 +81,6 @@ class MessageList(LinkedList):
             log('MessageList detected disconnect')
             return True
         return False
-
-
-#decorator that creates a separate thread for the wrapped function to avoid blocking main django thread
-def schedule(func):
-    def wrapper(*args, **kwargs):
-        t = Thread(target = func, args=args, kwargs=kwargs)
-        t.daemon = True
-        t.start()
-    return wrapper
 
 #establishes connection to twitch IRC server, returns connected socket
 def connect(channel_name):
@@ -174,7 +165,3 @@ def pingPong(stream, msg):
         log('replied to ping')
         return True
     return False
-
-#logs errors and such to a file
-def log(message):
-    open('error_log.txt', 'w').write(str(datetime.now()) + ': ' + message)

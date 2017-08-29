@@ -1,11 +1,14 @@
 import urllib2
 from ..chat_app.twitch_auth import CLIENT_ID, API_TOKEN, PERSISTENT
+from ..functions import schedule, log
 import json
 from dateutil import parser
 from django.utils import timezone
 import requests
 import re
-from .models import Clip
+from .models import Clip, Emoticon
+from django.core.exceptions import ObjectDoesNotExist
+import threading
 
 SLUG_REGEX = re.compile(r'slug: "(?P<slug>[a-zA-Z]*)"')
 
@@ -31,6 +34,45 @@ def getStreamUptime(stream):
     diff = now - created_at
     diffSeconds = diff.seconds
     return diffSeconds
+
+#converts emoticons in chat into image links (in its own thread)
+# @schedule
+def updateEmoticonDB():
+    print 'starting update'
+    print 'Active threads: ' + str(threading.active_count())
+    url = 'https://api.twitch.tv/kraken/chat/emoticons'
+    header = {
+        'Client-iD': CLIENT_ID,
+    }
+    request = urllib2.Request(url, headers=header)
+    response = urllib2.urlopen(request)
+    jsonified_response = json.load(response)
+    emoticon_dict = {}
+    for emoticon in jsonified_response['emoticons']:
+        key = emoticon['regex']
+        url = emoticon['images'][0]['url']
+        if key is None:
+            key = 'temp'
+        if url is None:
+            url = 'temp'
+        emoticon_dict[key] = url
+    print 'built dictionary'
+    for key in emoticon_dict.keys():
+        existing_emoticon = False
+        try:
+            existing_emoticon = Emoticon.objects.get(name=key)
+        except ObjectDoesNotExist:
+            pass
+        if existing_emoticon:
+            if existing_emoticon.url != emoticon_dict[key]:
+                log('Updating emoticon ' + key + ' due to url change.')
+                existing_emoticon.url = emoticon_dict[key]
+                existing_emoticon.save()
+        else:
+            log('Emoticon ' + key + ' does not exist in the DB yet. Creating new one.')
+            Emoticon.objects.create(name=key, url=emoticon_dict[key])
+    print 'built db'
+    log('Finished updating emoticon DB.')
 
 #clips a stream at current time using my API token and returns the clip's slug
 def clipStream(channel_name, chat_offset=0, message_dump=""):
